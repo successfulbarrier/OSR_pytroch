@@ -1,0 +1,29 @@
+# 配置文件
+backbone: resnet18
+pretrained: False
+model_path: weights/resnet18-5c106cde.pth
+train_class_num: 50
+val_class_num: 100
+dataset: cifar100_osr
+freeze_epoch: 10
+freeze_batch_size: 128
+all_epoch: 50
+unfreeze_batch_size: 128
+init_lr: 0.01
+min_lr: 0.0001
+num_workers: 4
+optimizer: sgd
+momentum: 0.9
+weight_decay: 0.0005
+lr_decay_type: cos
+save_period: 10
+weibull_threshold: 0.9
+
+input_shape: 
+  - 32
+  - 32
+
+# weibull 参数特有的
+weibull_tail: 20
+weibull_alpha: 3
+weibull_threshold: 0.9

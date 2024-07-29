@@ -37,7 +37,7 @@ class Cifar100(object):
             'train', 'trout', 'tulip', 'turtle', 'wardrobe', 'whale', 'willow_tree', 'wolf', 'woman', 'worm'
         ]
         self.num_classes    = 100
-        
+        self.tgt_idx_to_class = {i: self.class_names[i] for i in range(len(self.class_names))}
         #-------------------------------------------------#
         #   数据预处理
         #-------------------------------------------------#
@@ -68,3 +68,10 @@ class Cifar100(object):
         val_dataloader      = DataLoader(self.val_dataset, batch_size=batch_size, shuffle=False, num_workers=self.num_workers)
         return train_dataloader, val_dataloader
     
+    #-------------------------------------------------#
+    #   保存类别信息
+    #-------------------------------------------------#
+    def save_class(self, path):
+        with open(path, 'w') as f:
+            for class_id, class_name in self.tgt_idx_to_class.items():
+                f.write(f"{class_id}\t{class_name}\n") 

@@ -12,8 +12,19 @@ import shutil
 import os
 from datetime import datetime
 import torch
+import random
 import numpy as np
 
+#-------------------------------------------------#
+#   设定随机种子
+#-------------------------------------------------#
+def set_seed(seed):
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+    np.random.seed(seed)
+    random.seed(seed)
 #-------------------------------------------------#
 #   读取配置文件
 #-------------------------------------------------#

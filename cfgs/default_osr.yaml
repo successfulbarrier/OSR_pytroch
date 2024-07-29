@@ -1,4 +1,5 @@
 # 配置文件
+seed: 42
 backbone: vgg11_bn
 pretrained: False
 model_path: weights/vgg11_bn-6002323d.pth

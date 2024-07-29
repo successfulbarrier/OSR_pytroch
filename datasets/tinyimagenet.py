@@ -144,14 +144,21 @@ class Tinyimagenet(object):
         #   数据集类别信息
         #-------------------------------------------------#
         self.class_names = []
-        self.num_classes = 50
+        self.num_classes = 200
         
         #-------------------------------------------------#
         #   数据预处理
+        #   此处添加了色彩变换减少模型国拟合增强繁华能力
+        #   ColorJitter()函数参数说明：
+        #   hue：色调变化范围。值为0表示不变化，值为0.1表示随机变化在[-0.1, 0.1]之间。
+        #   saturation：饱和度变化范围。值为0表示不变化，值为0.1表示随机变化在[-0.1, 0.1]之间。
+        #   brightness：亮度变化范围。值为0表示不变化，值为0.1表示随机变化在[-0.1, 0.1]之间。
+        #   contrast：对比度变化范围。值为0表示不变化，值为0.1表示随机变化在[-0.1, 0.1]之间。
         #-------------------------------------------------#
         self.transform_train = transforms.Compose([
             transforms.RandomHorizontalFlip(),
             transforms.RandomCrop(64, padding=4),
+            transforms.ColorJitter(hue=0.1, saturation=0.2, brightness=0.2, contrast=0.1),
             transforms.ToTensor(),
             transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
         ])
@@ -175,3 +182,11 @@ class Tinyimagenet(object):
         train_dataloader    = DataLoader(self.train_dataset, batch_size=batch_size, shuffle=True, num_workers=self.num_workers)
         val_dataloader      = DataLoader(self.val_dataset, batch_size=batch_size, shuffle=False, num_workers=self.num_workers)
         return train_dataloader, val_dataloader
+    
+    #-------------------------------------------------#
+    #   保存类别信息
+    #-------------------------------------------------#
+    def save_class(self, path):
+        with open(path, 'w') as f:
+            for class_id, class_name in self.train_dataset.tgt_idx_to_class.items():
+                f.write(f"{class_id}\t{class_name}\n") 

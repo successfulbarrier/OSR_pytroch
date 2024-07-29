@@ -16,7 +16,7 @@ from torch import nn
 import torch.nn.functional as F
 import torch.backends.cudnn as cudnn
 
-from utils.tools import read_yaml_config, weights_init, load_weight
+from utils.tools import read_yaml_config, weights_init, load_weight, set_seed
 from nets.backbones import get_model_from_name
 from datasets import get_dataset_from_name
 from utils.callbacks import LossHistory
@@ -85,6 +85,11 @@ def train_one_epoch(model_train, train_dataloader, data_history, optimizer, epoc
 #-------------------------------------------------#
 def train(args):
     #-------------------------------------------------#
+    #   设置随机种子,请一定要设置随机种子
+    #-------------------------------------------------#
+    set_seed(args["seed"])
+    
+    #-------------------------------------------------#
     #   设置训练设备，分类一本比较小用不上多卡训练，故只采用单卡训练
     #-------------------------------------------------#
     os.environ["CUDA_VISIBLE_DEVICES"] = "0"    
@@ -94,6 +99,7 @@ def train(args):
     #   选择数据集
     #-------------------------------------------------#
     dataset = get_dataset_from_name[args["dataset"]](num_workers=args["num_workers"])
+    dataset.save_class(os.path.join(args["train_output_path"],"classes.txt"))
     if args["freeze_epoch"] != 0:
         train_dataloader, val_dataloader = dataset.get_dataloader(batch_size=args["freeze_batch_size"])
     else:
@@ -128,10 +134,10 @@ def train(args):
     #-------------------------------------------------#
     #   将模型设置进入训练模式
     #-------------------------------------------------#
-    model_train     = model.train()
-    # model_train = torch.nn.DataParallel(model)
-    # cudnn.benchmark = True
-    # model_train = model_train.cuda()
+    # model_train     = model.train()
+    model_train = torch.nn.DataParallel(model)
+    cudnn.benchmark = True
+    model_train = model_train.to(device)
     #-------------------------------------------------#
     #   冻结模型训练
     #-------------------------------------------------#

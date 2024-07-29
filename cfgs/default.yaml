@@ -1,9 +1,10 @@
 # 配置文件
+seed: 42
 backbone: mobilenetv2
 pretrained: False
 model_path: weights/mobilenet_v2-b0353104.pth
 dataset: tinyimagenet
-freeze_epoch: 10
+freeze_epoch: 3
 freeze_batch_size: 128
 all_epoch: 50
 unfreeze_batch_size: 128

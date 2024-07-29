@@ -2,7 +2,7 @@
 backbone: mobilenetv2
 pretrained: False
 model_path: weights/mobilenet_v2-b0353104.pth
-dataset: cifar100
+dataset: tinyimagenet
 freeze_epoch: 10
 freeze_batch_size: 128
 all_epoch: 50
@@ -18,5 +18,5 @@ save_period: 10
 weibull_threshold: 0.9
 
 input_shape: 
-  - 32
-  - 32
+  - 64
+  - 64

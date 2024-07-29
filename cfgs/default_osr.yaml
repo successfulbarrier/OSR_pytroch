@@ -1,15 +1,15 @@
 # 配置文件
-backbone: mobilenetv2
+backbone: vgg11_bn
 pretrained: False
-model_path: weights/mobilenet_v2-b0353104.pth
+model_path: weights/vgg11_bn-6002323d.pth
 train_class_num: 50
-val_class_num: 100
-dataset: cifar100_osr
-freeze_epoch: 10
+val_class_num: 200
+dataset: tinyimagenet_osr
+freeze_epoch: 5
 freeze_batch_size: 128
 all_epoch: 50
 unfreeze_batch_size: 128
-init_lr: 0.01
+init_lr: 0.002
 min_lr: 0.0001
 num_workers: 4
 optimizer: sgd
@@ -20,8 +20,8 @@ save_period: 10
 weibull_threshold: 0.9
 
 input_shape: 
-  - 32
-  - 32
+  - 64
+  - 64
 
 # weibull 参数特有的
 weibull_tail: 20

@@ -202,8 +202,8 @@ def train(args):
         #-------------------------------------------------#
         #   验证一轮,这里需要传入训练集，建立weibull模型
         #-------------------------------------------------#
-        if epoch % 5 == 0 and epoch!=0:
-            val_one_epoch(model_train, val_dataloader, loss_history, optimizer, epoch, args, device)
+        # if (epoch+1) % 5 == 0 and epoch!=0:
+        val_one_epoch(model_train, val_dataloader, loss_history, optimizer, epoch, args, device)
         
         #-------------------------------------------------#
         #   保存最优权重

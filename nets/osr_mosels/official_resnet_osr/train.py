@@ -14,6 +14,7 @@ from tqdm import tqdm
 import torch
 from torch import nn
 import torch.nn.functional as F
+import torch.backends.cudnn as cudnn
 
 from utils.tools import read_yaml_config, weights_init, load_weight
 from nets.backbones import get_model_from_name
@@ -106,19 +107,17 @@ def train(args):
     else:
         model = get_model_from_name[backbone](input_shape = args["input_shape"], num_classes = dataset.num_classes, pretrained = args["pretrained"])
     
-    if args["model_path"] != None:
-        #-------------------------------------------------#
-        #   加载权重
-        #-------------------------------------------------#
-        model = load_weight(model, args["model_path"]).to(device)
-    else:
-        #-------------------------------------------------#
-        #   没有使用预训练权重，并且也没有加载权重则对权重进行初始化
-        #   目前仅对卷积层和BN层进行了初始化
-        #-------------------------------------------------#
-        if not args["pretrained"]:
-            weights_init(model)
-    
+    #-------------------------------------------------#
+    #   没有使用预训练权重，并且也没有加载权重则对权重进行初始化
+    #   目前仅对卷积层和BN层进行了初始化
+    #-------------------------------------------------#
+    if not args["pretrained"]:
+        weights_init(model)
+    #-------------------------------------------------#
+    #   加载权重
+    #-------------------------------------------------#
+    model = load_weight(model, args["model_path"])
+ 
     #-------------------------------------------------#
     #   训练数据记录
     #-------------------------------------------------#
@@ -132,7 +131,8 @@ def train(args):
     #-------------------------------------------------#
     #   将模型设置进入训练模式
     #-------------------------------------------------#
-    model_train     = model.train()
+    model_train = torch.nn.DataParallel(model).to(device).train()
+    cudnn.benchmark = True
     
     #-------------------------------------------------#
     #   冻结模型训练

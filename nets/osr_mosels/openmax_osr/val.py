@@ -67,7 +67,7 @@ def val_one_epoch(model_train, train_dataloader, val_dataloader, data_history, o
     #-------------------------------------------------#
     #   分别计算三种方法的指标
     #-------------------------------------------------#
-    pred_softmax, pred_softmax_threshold, pred_openmax = [], [], []
+    pred_softmax_threshold, pred_openmax = [], []
     score_softmax, score_openmax = [], []            
     for score in scores:
         so, ss = openmax(weibull_model, categories, score,

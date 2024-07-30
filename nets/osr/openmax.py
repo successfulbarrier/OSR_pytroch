@@ -152,3 +152,17 @@ def compute_train_score_and_mavs_and_dists(train_class_num,trainloader,device,ne
     mavs = np.array([np.mean(x, axis=0) for x in scores])  # (C, 1, C)
     dists = [compute_channel_distances(mcv, score) for mcv, score in zip(mavs, scores)]
     return scores, mavs, dists
+
+
+#-------------------------------------------------#
+#   导出weibull_model
+#-------------------------------------------------#
+def weibull_model_output(model_train, train_dataloader, device, args):
+    import pickle
+    print("Fittting Weibull distribution...")
+    _, mavs, dists = compute_train_score_and_mavs_and_dists(args["train_class_num"], train_dataloader, device, model_train)
+    categories = list(range(0, args["train_class_num"]))
+    weibull_model = fit_weibull(mavs, dists, categories, args["weibull_tail"], "euclidean")
+    with open(args["train_output_path"]+'/weibull_model.pkl', 'wb') as file:
+        pickle.dump(weibull_model, file)
+    print("导出完成！！！")

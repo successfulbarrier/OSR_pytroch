@@ -159,6 +159,7 @@ class Tinyimagenet_osr(object):
         self.transform_train = transforms.Compose([
             transforms.RandomHorizontalFlip(),
             transforms.RandomCrop(64, padding=4),
+            transforms.ColorJitter(hue=0.2, saturation=0.2, brightness=0.2, contrast=0.1),
             transforms.ToTensor(),
             transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
         ])
@@ -183,6 +184,13 @@ class Tinyimagenet_osr(object):
         val_dataloader      = DataLoader(self.val_dataset, batch_size=batch_size, shuffle=False, num_workers=self.num_workers)
         return train_dataloader, val_dataloader
     
+    #-------------------------------------------------#
+    #   保存类别信息
+    #-------------------------------------------------#
+    def save_class(self, path):
+        with open(path, 'w') as f:
+            for class_id, class_name in self.train_dataset.tgt_idx_to_class.items():
+                f.write(f"{class_id}\t{class_name}\n") 
     
 if __name__ == '__main__':
     pass

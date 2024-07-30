@@ -16,12 +16,12 @@ from torch import nn
 import torch.nn.functional as F
 import torch.backends.cudnn as cudnn
 
-from utils.tools import read_yaml_config, weights_init, load_weight
+from utils.tools import read_yaml_config, weights_init, load_weight, set_seed
 from nets.backbones import get_model_from_name
 from datasets import get_dataset_from_name
 from utils.callbacks import LossHistory
 from utils.optimizer import get_optimizer, get_lr_scheduler, set_optimizer_lr, get_lr
-from nets.osr_mosels.official_resnet_osr.val import val_one_epoch
+from nets.osr_mosels.classification.val import val_one_epoch
 
 
 #-------------------------------------------------#
@@ -41,8 +41,9 @@ def train_one_epoch(model_train, train_dataloader, data_history, optimizer, epoc
             break
         images, targets = batch
 
-        images  = images.to(device)
-        targets = targets.to(device)
+        with torch.no_grad():
+            images  = images.to(device)
+            targets = targets.to(device)
                 
         #----------------------#
         #   清零梯度
@@ -78,10 +79,16 @@ def train_one_epoch(model_train, train_dataloader, data_history, optimizer, epoc
     data_history.append_data(epoch,"train_acc", total_accuracy/epoch_step)
     data_history.append_data(epoch,"lr", get_lr(optimizer))
     
+    
 #-------------------------------------------------#
 #   训练脚本
 #-------------------------------------------------#
 def train(args):
+    #-------------------------------------------------#
+    #   设置随机种子,请一定要设置随机种子
+    #-------------------------------------------------#
+    set_seed(args["seed"])
+    
     #-------------------------------------------------#
     #   设置训练设备，分类一本比较小用不上多卡训练，故只采用单卡训练
     #-------------------------------------------------#
@@ -91,8 +98,8 @@ def train(args):
     #-------------------------------------------------#
     #   选择数据集
     #-------------------------------------------------#
-    dataset = get_dataset_from_name[args["dataset"]](num_workers=args["num_workers"], train_class_num=args["train_class_num"], 
-                                                     val_class_num=args["val_class_num"])
+    dataset = get_dataset_from_name[args["dataset"]](num_workers=args["num_workers"])
+    dataset.save_class(os.path.join(args["train_output_path"],"classes.txt"))
     if args["freeze_epoch"] != 0:
         train_dataloader, val_dataloader = dataset.get_dataloader(batch_size=args["freeze_batch_size"])
     else:
@@ -113,27 +120,24 @@ def train(args):
     #-------------------------------------------------#
     if not args["pretrained"]:
         weights_init(model)
+        
     #-------------------------------------------------#
     #   加载权重
     #-------------------------------------------------#
-    model = load_weight(model, args["model_path"])
- 
+    model = load_weight(model, args["model_path"]).to(device)
+
     #-------------------------------------------------#
     #   训练数据记录
     #-------------------------------------------------#
     loss_history = LossHistory(args["train_output_path"], model, input_shape=args["input_shape"])    
-    loss_history.data = {"train_loss":[], "lr":[], "train_acc":[], 
-                         "softmax_t_acc":[],"softmax_t_f1_measure":[], "softmax_t_f1_macro":[], 
-                         "softmax_t_f1_macro_w":[], "softmax_t_AUROC":[],
-                         "openmax_acc":[],"openmax_f1_measure":[], "openmax_f1_macro":[], 
-                         "openmax_f1_macro_w":[], "openmax_AUROC":[]}
-    
+
     #-------------------------------------------------#
     #   将模型设置进入训练模式
     #-------------------------------------------------#
-    model_train = torch.nn.DataParallel(model).to(device).train()
+    # model_train     = model.train()
+    model_train = torch.nn.DataParallel(model)
     cudnn.benchmark = True
-    
+    model_train = model_train.to(device)
     #-------------------------------------------------#
     #   冻结模型训练
     #-------------------------------------------------#
@@ -204,13 +208,13 @@ def train(args):
         #-------------------------------------------------#
         #   验证一轮,这里需要传入训练集，建立weibull模型
         #-------------------------------------------------#
-        if (epoch+1) % 5 == 0 and epoch!=0:
-            val_one_epoch(model_train, train_dataloader, val_dataloader, loss_history, optimizer, epoch, args, device)
+        # if (epoch+1) % 5 == 0 and epoch!=0:
+        val_one_epoch(model_train, val_dataloader, loss_history, optimizer, epoch, args, device)
         
         #-------------------------------------------------#
         #   保存最优权重
         #-------------------------------------------------#
-        if len(loss_history.data["softmax_t_acc"]) <= 1 or loss_history.data["softmax_t_acc"][-1] >= max(loss_history.data["softmax_t_acc"][:-1]):
+        if len(loss_history.data["val_P"]) <= 1 or loss_history.data["val_P"][-1] >= max(loss_history.data["val_P"][:-1]):
             print('Save best model to best_epoch_weights.pth')
             torch.save(model.state_dict(), os.path.join(args["train_output_path"], "best_epoch_weights.pth"))
             
@@ -223,7 +227,7 @@ if __name__ == '__main__':
     #-------------------------------------------------#
     #   获取参数
     #-------------------------------------------------#
-    args = read_yaml_config("cfgs/default_osr.yaml")
+    args = read_yaml_config("cfgs/default.yaml")
     
     #-------------------------------------------------#
     #   开始训练

@@ -1,27 +1,27 @@
 # 配置文件
 seed: 42
-backbone: resnet18
+backbone: swin_transformer_tiny
 pretrained: False
-model_path: logs/train/logs_20240730210411/best_epoch_weights.pth
-train_class_num: 20
-val_class_num: 200
-dataset: tinyimagenet_osr
-freeze_epoch: 0
-freeze_batch_size: 128
-all_epoch: 100
-unfreeze_batch_size: 128
-init_lr: 0.01
+model_path: experiment/swim-t-p/best_epoch_weights.pth
+train_class_num: 9
+val_class_num: 20
+dataset: voc2007_merge1_osr
+freeze_epoch: 3
+freeze_batch_size: 32
+all_epoch: 50
+unfreeze_batch_size: 32
+init_lr: 0.001
 min_lr: 0.0001
 num_workers: 4
 optimizer: adam
 momentum: 0.9
-weight_decay: 0.0005
+weight_decay: 0.01
 lr_decay_type: cos
 save_period: 10
 
 input_shape: 
-  - 64
-  - 64
+  - 128
+  - 128
 
 # weibull 参数特有的
 weibull_tail: 20
@@ -29,4 +29,4 @@ weibull_alpha: 3
 weibull_threshold: 0.9
 
 # 导出weibull_model
-weibull_model_output: False
+weibull_model_output: True

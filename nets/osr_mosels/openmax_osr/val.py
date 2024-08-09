@@ -12,26 +12,27 @@ sys.path.append("/media/lht/LHT/OSR_code/OSR_pytorch")
 import os
 from tqdm import tqdm
 import torch
-from torch import nn
 import numpy as np
 import torch.nn.functional as F
 
-from utils.optimizer import get_lr
 from nets.osr.openmax import compute_train_score_and_mavs_and_dists,fit_weibull,openmax
 from utils.evaluation import Evaluation
+from utils.tools import read_yaml_config, load_weight, set_seed
+from nets.backbones import get_model_from_name
+from datasets import get_dataset_from_name
 
 
 #-------------------------------------------------#
 #   验证一轮的脚本
 #-------------------------------------------------#
-def val_one_epoch(model_train, train_dataloader, val_dataloader, data_history, optimizer, epoch, args, device):
-    val_loss        = 0
-    val_accuracy    = 0
+def val_one_epoch(model_train, train_dataloader, val_dataloader, args, device, data_history=None, epoch=None):
+
     epoch_step_val      = len(val_dataloader)
     scores, labels = [], []
     
     print('Start Validation')
-    pbar = tqdm(total=epoch_step_val, desc=f'Epoch {epoch + 1}/{args["all_epoch"]}',postfix=dict,mininterval=0.3)
+    if epoch != None:
+        pbar = tqdm(total=epoch_step_val, desc=f'Epoch {epoch + 1}/{args["all_epoch"]}',postfix=dict,mininterval=0.3)
     model_train.eval()
     with torch.no_grad():   # 使用此方法更为稳妥保证梯度不会记录和更新
         for iteration, batch in enumerate(val_dataloader):
@@ -44,9 +45,11 @@ def val_one_epoch(model_train, train_dataloader, val_dataloader, data_history, o
             scores.append(outputs)
             labels.append(targets)
 
-            pbar.set_postfix(**{'iteration': iteration})
-            pbar.update(1)
-    pbar.close()
+            if epoch != None:
+                pbar.set_postfix(**{'iteration': iteration})
+                pbar.update(1)
+    if epoch != None:
+        pbar.close()
     
     #-------------------------------------------------#
     #   对预测结果进行初步处理，方便后续高效计算
@@ -113,19 +116,65 @@ def val_one_epoch(model_train, train_dataloader, val_dataloader, data_history, o
     #-------------------------------------------------#
     #   保存训练信息
     #-------------------------------------------------#
-    data_history.append_data(epoch,"softmax_t_acc", softmax_threshold_acc)
-    data_history.append_data(epoch,"softmax_t_f1_measure", softmax_threshold_f1_measure)
-    data_history.append_data(epoch,"softmax_t_f1_macro", softmax_threshold_f1_macro)
-    data_history.append_data(epoch,"softmax_t_f1_macro_w", softmax_threshold_f1_macro_weighted)
-    data_history.append_data(epoch,"softmax_t_AUROC", softmax_threshold_AUROC)
-    data_history.append_data(epoch,"openmax_acc", openmax_acc)
-    data_history.append_data(epoch,"openmax_f1_measure", openmax_f1_measure)
-    data_history.append_data(epoch,"openmax_f1_macro", openmax_f1_macro)
-    data_history.append_data(epoch,"openmax_f1_macro_w", openmax_f1_macro_weighted)
-    data_history.append_data(epoch,"openmax_AUROC", openmax_AUROC) 
+    if epoch != None and data_history != None:
+        data_history.append_data(epoch,"softmax_t_acc", softmax_threshold_acc)
+        data_history.append_data(epoch,"softmax_t_f1_measure", softmax_threshold_f1_measure)
+        data_history.append_data(epoch,"softmax_t_f1_macro", softmax_threshold_f1_macro)
+        data_history.append_data(epoch,"softmax_t_f1_macro_w", softmax_threshold_f1_macro_weighted)
+        data_history.append_data(epoch,"softmax_t_AUROC", softmax_threshold_AUROC)
+        data_history.append_data(epoch,"openmax_acc", openmax_acc)
+        data_history.append_data(epoch,"openmax_f1_measure", openmax_f1_measure)
+        data_history.append_data(epoch,"openmax_f1_macro", openmax_f1_macro)
+        data_history.append_data(epoch,"openmax_f1_macro_w", openmax_f1_macro_weighted)
+        data_history.append_data(epoch,"openmax_AUROC", openmax_AUROC) 
     
 #-------------------------------------------------#
 #   main函数
 #-------------------------------------------------#
 if __name__ == '__main__':
-    ...
+    #-------------------------------------------------#
+    #   获取参数
+    #-------------------------------------------------#
+    args = read_yaml_config("cfgs/default_osr.yaml")
+    #-------------------------------------------------#
+    #   设置随机种子,请一定要设置随机种子
+    #-------------------------------------------------#
+    set_seed(args["seed"])
+    #-------------------------------------------------#
+    #   设置训练设备，分类一本比较小用不上多卡训练，故只采用单卡训练
+    #-------------------------------------------------#
+    os.environ["CUDA_VISIBLE_DEVICES"] = "0"    
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    
+    #-------------------------------------------------#
+    #   选择数据集
+    #-------------------------------------------------#
+    dataset = get_dataset_from_name[args["dataset"]](num_workers=args["num_workers"], train_class_num=args["train_class_num"], 
+                                                     val_class_num=args["val_class_num"], input_shape=args["input_shape"])
+    dataset.save_class(os.path.join(args["train_output_path"],"classes.txt"))
+    if args["freeze_epoch"] != 0:
+        train_dataloader, val_dataloader = dataset.get_dataloader(batch_size=args["freeze_batch_size"])
+    else:
+        train_dataloader, val_dataloader = dataset.get_dataloader(batch_size=args["unfreeze_batch_size"])
+    
+    #-------------------------------------------------#
+    #   选择模型
+    #-------------------------------------------------#
+    backbone = args["backbone"]
+    if backbone not in ['vit_b_16', 'swin_transformer_tiny', 'swin_transformer_small', 'swin_transformer_base']:
+        model = get_model_from_name[backbone](num_classes = dataset.num_classes, pretrained = args["pretrained"])
+    else:
+        model = get_model_from_name[backbone](input_shape = args["input_shape"], num_classes = dataset.num_classes, pretrained = args["pretrained"])
+
+    #-------------------------------------------------#
+    #   加载权重
+    #-------------------------------------------------#
+    model = load_weight(model, args["model_path"])
+    model = model.to(device)
+    
+    #-------------------------------------------------#
+    #   验证模型
+    #-------------------------------------------------#
+    val_one_epoch(model, train_dataloader, val_dataloader, args, device)
+    
+    

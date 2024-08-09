@@ -29,16 +29,16 @@ from nets.osr.openmax import openmax
 #-------------------------------------------------#
 seed = 43
 image_path  = "imgs/4.JPEG"
-model_path  = "logs/train/logs_20240730210411/best_epoch_weights.pth"
-num_class   = 20
-input_shape = [64,64]
+model_path  = "experiment/resnet18-p/best_epoch_weights.pth"
+num_class   = 9
+input_shape = [128,128]
 backbone = "resnet18"
 # labels = ['cat', 'dog', 'bird', 'horse', 'rabbit', 'turtle', 'fish', 'hamster', 'parrot', 'snake']
-weibull_model = "logs/train/logs_20240730213241/weibull_model.pkl" 
+weibull_model = "experiment/resnet18-p/weibull_model.pkl" 
 categories = list(range(num_class))
 labels = range(num_class+1)
 weibull_alpha = 3
-weibull_threshold = 0.9
+weibull_threshold = 0.8
 
   
 #-------------------------------------------------#
@@ -83,6 +83,7 @@ def predict_image(image_path, preprocess, model):
     shutil.copy(image_path, 'logs/test/' + new_name)
     new_name = f"{pred_openmax}_openmax_{random_suffix}.jpg"
     shutil.copy(image_path, 'logs/test/' + new_name)
+ 
     
 #-------------------------------------------------#
 #   推理脚本

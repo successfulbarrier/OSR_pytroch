@@ -98,7 +98,7 @@ def train(args):
     #-------------------------------------------------#
     #   选择数据集
     #-------------------------------------------------#
-    dataset = get_dataset_from_name[args["dataset"]](num_workers=args["num_workers"])
+    dataset = get_dataset_from_name[args["dataset"]](num_workers=args["num_workers"], input_shape=args["input_shape"])
     dataset.save_class(os.path.join(args["train_output_path"],"classes.txt"))
     if args["freeze_epoch"] != 0:
         train_dataloader, val_dataloader = dataset.get_dataloader(batch_size=args["freeze_batch_size"])

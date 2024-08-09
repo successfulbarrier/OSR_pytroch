@@ -3,11 +3,11 @@ seed: 42
 backbone: mobilenetv2
 pretrained: False
 model_path: weights/mobilenet_v2-b0353104.pth
-dataset: tinyimagenet
+dataset: voc2007_merge1
 freeze_epoch: 3
-freeze_batch_size: 128
+freeze_batch_size: 32
 all_epoch: 50
-unfreeze_batch_size: 128
+unfreeze_batch_size: 32
 init_lr: 0.01
 min_lr: 0.0001
 num_workers: 4
@@ -16,8 +16,8 @@ momentum: 0.9
 weight_decay: 0.0005
 lr_decay_type: cos
 save_period: 10
-weibull_threshold: 0.9
+
 
 input_shape: 
-  - 64
-  - 64
+  - 128
+  - 128

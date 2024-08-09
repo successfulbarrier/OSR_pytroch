@@ -97,7 +97,7 @@ def train(args):
     #   选择数据集
     #-------------------------------------------------#
     dataset = get_dataset_from_name[args["dataset"]](num_workers=args["num_workers"], train_class_num=args["train_class_num"], 
-                                                     val_class_num=args["val_class_num"])
+                                                     val_class_num=args["val_class_num"], input_shape=args["input_shape"])
     dataset.save_class(os.path.join(args["train_output_path"],"classes.txt"))
     if args["freeze_epoch"] != 0:
         train_dataloader, val_dataloader = dataset.get_dataloader(batch_size=args["freeze_batch_size"])
@@ -221,7 +221,7 @@ def train(args):
         #   验证一轮,这里需要传入训练集，建立weibull模型
         #-------------------------------------------------#
         if (epoch+1) % 5 == 0 and epoch!=0:
-            val_one_epoch(model_train, train_dataloader, val_dataloader, loss_history, optimizer, epoch, args, device)
+            val_one_epoch(model_train, train_dataloader, val_dataloader, args, device, loss_history, epoch)
         
         #-------------------------------------------------#
         #   保存最优权重
@@ -229,7 +229,10 @@ def train(args):
         if len(loss_history.data["softmax_t_acc"]) <= 1 or loss_history.data["softmax_t_acc"][-1] >= max(loss_history.data["softmax_t_acc"][:-1]):
             print('Save best model to best_epoch_weights.pth')
             torch.save(model.state_dict(), os.path.join(args["train_output_path"], "best_epoch_weights.pth"))
-            
+        elif len(loss_history.data["openmax_acc"]) <= 1 or loss_history.data["openmax_acc"][-1] >= max(loss_history.data["openmax_acc"][:-1]):
+            print('Save best model to best_epoch_weights.pth')
+            torch.save(model.state_dict(), os.path.join(args["train_output_path"], "best_epoch_weights.pth"))
+                        
         torch.save(model.state_dict(), os.path.join(args["train_output_path"], "last_epoch_weights.pth"))
         
 #-------------------------------------------------#

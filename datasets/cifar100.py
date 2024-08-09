@@ -16,7 +16,7 @@ import torchvision.transforms as transforms
 #   cifar100数据集获取类
 #-------------------------------------------------#
 class Cifar100(object):
-    def __init__(self, num_workers):
+    def __init__(self, num_workers, input_shape=[32, 32]):
         #-------------------------------------------------#
         #   数据集路径
         #-------------------------------------------------#
@@ -43,7 +43,7 @@ class Cifar100(object):
         #-------------------------------------------------#
         self.transform_train = transforms.Compose([
             transforms.RandomHorizontalFlip(),
-            transforms.RandomCrop(32, padding=4),
+            transforms.RandomCrop(input_shape[0], padding=4),
             transforms.ToTensor(),
             transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
         ])
